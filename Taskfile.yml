@@ -1,0 +1,11 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  inject-flux-controllers:
+    cmds:
+      - |
+        flux install --export \
+          --network-policy=false --components="source-controller,kustomize-controller,helm-controller" \
+          > ./apps/flux/flux-components.yaml
