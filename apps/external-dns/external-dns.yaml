@@ -1,0 +1,81 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-dns
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: HelmRepository
+metadata:
+  name: external-dns
+spec:
+  interval: 1m
+  url: https://kubernetes-sigs.github.io/external-dns/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: external-dns-secrets
+spec:
+  dependsOn:
+    - name: external-secrets
+      namespace: external-secrets
+
+  chart:
+    spec:
+      chart: ./flux/helm/paramstore-secret
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+
+  interval: 15s
+  values:
+    ClusterSecretStore: paramstore-secretstore
+    Data:
+      - secretKey: credentials
+        remoteRef:
+          key: /service-account/ms01-cluster-external-dns/credentials
+
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: external-dns
+spec:
+  dependsOn:
+    - name: external-dns-secrets
+      namespace: external-dns
+
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.14.5
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+  interval: 15s
+  values:
+    provider: "aws"
+    policy: "sync"
+
+    env:
+      - name: AWS_SHARED_CREDENTIALS_FILE
+        value: /.aws/credentials
+
+    extraVolumes:
+      - name: aws-credentials
+        secret:
+          secretName: external-dns-secrets
+    extraVolumeMounts:
+      - name: aws-credentials
+        mountPath: /.aws
+        readOnly: true
+
+    resources:
+      limits:
+        cpu: 40m
+        memory: 200Mi
+      requests:
+        cpu: 10m
+        memory: 50Mi

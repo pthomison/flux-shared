@@ -9,3 +9,18 @@ tasks:
         flux install --export \
           --network-policy=false --components="source-controller,kustomize-controller,helm-controller" \
           > ./apps/flux/flux-components.yaml
+
+  reconcile-git-repo:
+    cmds:
+      - flux reconcile source git flux-system
+
+  reconcile-kustomization:
+    cmds:
+      - flux reconcile kustomization flux-system
+
+  push-deploy:
+    cmds:
+      - git add . && git commit -m "push & deploy" | true
+      - git push origin
+      - task: reconcile-git-repo
+      - task: reconcile-kustomization

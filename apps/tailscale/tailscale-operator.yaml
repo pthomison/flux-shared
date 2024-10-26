@@ -1,0 +1,60 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailscale
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: HelmRepository
+metadata:
+  name: tailscale
+spec:
+  interval: 1m
+  url: https://pkgs.tailscale.com/helmcharts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: operator-oauth
+spec:
+  dependsOn:
+    - name: external-secrets
+      namespace: external-secrets
+
+  chart:
+    spec:
+      chart: ./flux/helm/paramstore-secret
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+
+  interval: 15s
+  values:
+    ClusterSecretStore: paramstore-secretstore
+    Data:
+      - secretKey: client_id
+        remoteRef:
+          key: /tailscale/oauth/client_id
+      - secretKey: client_secret
+        remoteRef:
+          key: /tailscale/oauth/client_secret
+
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: tailscale-operator
+spec:
+  dependsOn:
+    - name: operator-oauth
+      namespace: tailscale
+  chart:
+    spec:
+      chart: tailscale-operator
+      # version: 3.8.3
+      sourceRef:
+        kind: HelmRepository
+        name: tailscale
+  interval: 15s
+  values: {}
