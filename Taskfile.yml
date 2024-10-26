@@ -12,11 +12,11 @@ tasks:
 
   reconcile-git-repo:
     cmds:
-      - flux reconcile source git flux-system
+      - flux reconcile source git flux-shared
 
   reconcile-kustomization:
     cmds:
-      - flux reconcile kustomization flux-system
+      - flux reconcile kustomization flux-shared
 
   push-deploy:
     cmds:
