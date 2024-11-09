@@ -7,7 +7,9 @@ tasks:
     cmds:
       - |
         flux install --export \
-          --network-policy=false --components="source-controller,kustomize-controller,helm-controller" \
+          --network-policy=false \
+          --components-extra=image-reflector-controller,image-automation-controller \
+          --components="source-controller,kustomize-controller,helm-controller" \
           > ./apps/flux/flux-components.yaml
 
   reconcile-git-repo:
